@@ -24,6 +24,8 @@ public class DownloadEntry {
     @JoinColumn(name = "playlistId", nullable = true)
     private Playlist playlist;
 
+    private Integer playlistIndex;
+
     private String videoId;
 
     private String name;
