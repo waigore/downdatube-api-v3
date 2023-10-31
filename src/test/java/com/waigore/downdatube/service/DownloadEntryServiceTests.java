@@ -3,6 +3,7 @@ package com.waigore.downdatube.service;
 import com.waigore.downdatube.dto.DownloadEntryDTO;
 import com.waigore.downdatube.entity.DownloadEntry;
 import com.waigore.downdatube.repository.DownloadEntryRepository;
+import org.javatuples.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.util.List;
@@ -55,12 +59,36 @@ public class DownloadEntryServiceTests {
 
     @Test
     void testFindAllEntriesWorks() {
-        given(downloadEntryRepository.findAll((Sort) any())).willAnswer(d -> {
+        given(downloadEntryRepository.findAll(any(Sort.class))).willAnswer(d -> {
             return allDownloadEntries;
         });
 
-        List<DownloadEntryDTO> dtos =downloadEntryService.findAllEntries();
+        List<DownloadEntryDTO> dtos = downloadEntryService.findAllEntries();
         assertThat(dtos).isNotEmpty();
         assertThat(dtos).hasSize(2);
+    }
+
+    @Test
+    void testFindEntriesWithRangeWorks() {
+        given(downloadEntryRepository.findAll(any(Pageable.class))).willAnswer(i -> {
+            Pageable p = i.getArgument(0);
+            int fromRecord = p.getPageNumber() * p.getPageSize();
+            int toRecord = fromRecord + p.getPageSize();
+            return new PageImpl(allDownloadEntries.subList(fromRecord, toRecord));
+        });
+
+        List<DownloadEntryDTO> dtos = downloadEntryService.findEntries(new Pair(0, 1), null);
+        assertThat(dtos).isNotEmpty();
+        assertThat(dtos).hasSize(1);
+
+        DownloadEntryDTO dto = dtos.get(0);
+        assertThat(dto.getVideoId()).isEqualTo("6jWNcraW4Go");
+
+
+        dtos = downloadEntryService.findEntries(new Pair(1, 1), null);
+        assertThat(dtos).hasSize(1);
+
+        dto = dtos.get(0);
+        assertThat(dto.getVideoId()).isEqualTo("e4Uo3nKVx4A");
     }
 }

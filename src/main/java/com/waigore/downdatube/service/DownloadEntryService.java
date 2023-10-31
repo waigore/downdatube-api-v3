@@ -23,7 +23,12 @@ public class DownloadEntryService {
     private DownloadEntryMapper downloadEntryMapper;
 
     public List<DownloadEntryDTO> findAllEntries() {
-        Iterable<DownloadEntry> it = downloadEntryRepository.findAll(Sort.unsorted());
+        return findAllEntries(null);
+    }
+
+    public List<DownloadEntryDTO> findAllEntries(Pair<String, String> sort) {
+        Sort jpaSort = sort == null ? Sort.unsorted() : Sort.by(Sort.Direction.fromString(sort.getValue0()), sort.getValue1());
+        Iterable<DownloadEntry> it = downloadEntryRepository.findAll(jpaSort);
         return StreamSupport.stream(it.spliterator(), false)
                 .map(d -> downloadEntryMapper.entityToDto(d))
                 .toList();
@@ -32,10 +37,9 @@ public class DownloadEntryService {
     public List<DownloadEntryDTO> findEntries(
             Pair<Integer, Integer> range,
             Pair<String, String> sort) {
+        Sort jpaSort = sort == null ? Sort.unsorted() : Sort.by(Sort.Direction.fromString(sort.getValue0()), sort.getValue1());
         Page<DownloadEntry> page = downloadEntryRepository.findAll(
-                PageRequest.of(range.getValue0(), range.getValue1(),
-                        Sort.by(Sort.Direction.fromString(sort.getValue0()), sort.getValue1())
-                )
+                PageRequest.of(range.getValue0(), range.getValue1(), jpaSort)
         );
         return page.get().map(d -> downloadEntryMapper.entityToDto(d)).toList();
     }
@@ -44,10 +48,9 @@ public class DownloadEntryService {
             String uploader,
             Pair<Integer, Integer> range,
             Pair<String, String> sort) {
+        Sort jpaSort = sort == null ? Sort.unsorted() : Sort.by(Sort.Direction.fromString(sort.getValue0()), sort.getValue1());
         Page<DownloadEntry> page = downloadEntryRepository.findByUploader(
-                uploader, PageRequest.of(range.getValue0(), range.getValue1(),
-                        Sort.by(Sort.Direction.fromString(sort.getValue0()), sort.getValue1())
-                )
+                uploader, PageRequest.of(range.getValue0(), range.getValue1(), jpaSort)
         );
         return page.get().map(d -> downloadEntryMapper.entityToDto(d)).toList();
     }
