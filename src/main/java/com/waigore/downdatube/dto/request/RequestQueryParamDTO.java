@@ -1,6 +1,6 @@
 package com.waigore.downdatube.dto.request;
 
-import com.waigore.downdatube.util.RequestUtils;
+import com.waigore.downdatube.util.QueryPagingUtils;
 import lombok.*;
 import org.javatuples.Pair;
 
@@ -17,6 +17,6 @@ public class RequestQueryParamDTO {
     Pair<String, String> sort;
 
     public Pair<Integer, Integer> asJpaRange() {
-        return RequestUtils.frontendToBackendRange(range);
+        return QueryPagingUtils.frontendToBackendRange(range);
     }
 }

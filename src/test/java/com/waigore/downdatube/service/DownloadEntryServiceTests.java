@@ -17,7 +17,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 import java.util.List;
 
@@ -39,6 +38,12 @@ public class DownloadEntryServiceTests {
 
     private List<DownloadEntry> allDownloadEntries;
 
+    Page extractPageFromList(List list, Pageable p) {
+        int fromRecord = p.getPageNumber() * p.getPageSize();
+        int toRecord = fromRecord + p.getPageSize();
+        return new PageImpl(list.subList(fromRecord, toRecord));
+    }
+
     @BeforeEach
     void setUp() {
         allDownloadEntries = List.of(
@@ -53,28 +58,33 @@ public class DownloadEntryServiceTests {
                         .name("Video #2")
                         .uploader("memehongkong")
                         .status(DownloadEntry.Status.DOWNLOADING)
+                        .build(),
+                DownloadEntry.builder()
+                        .videoId("RbXobmVdc20")
+                        .name("Video #3")
+                        .uploader("Premier League")
+                        .status(DownloadEntry.Status.FINISHED)
                         .build()
+
         );
     }
 
     @Test
     void testFindAllEntriesWorks() {
-        given(downloadEntryRepository.findAll(any(Sort.class))).willAnswer(d -> {
-            return allDownloadEntries;
+        given(downloadEntryRepository.findAll(any(Pageable.class))).willAnswer(d -> {
+            return new PageImpl(allDownloadEntries);
         });
 
         List<DownloadEntryDTO> dtos = downloadEntryService.findAllEntries();
         assertThat(dtos).isNotEmpty();
-        assertThat(dtos).hasSize(2);
+        assertThat(dtos).hasSize(allDownloadEntries.size());
     }
 
     @Test
     void testFindEntriesWithRangeWorks() {
         given(downloadEntryRepository.findAll(any(Pageable.class))).willAnswer(i -> {
             Pageable p = i.getArgument(0);
-            int fromRecord = p.getPageNumber() * p.getPageSize();
-            int toRecord = fromRecord + p.getPageSize();
-            return new PageImpl(allDownloadEntries.subList(fromRecord, toRecord));
+            return extractPageFromList(allDownloadEntries, p);
         });
 
         List<DownloadEntryDTO> dtos = downloadEntryService.findEntries(new Pair(0, 1), null);
@@ -90,5 +100,30 @@ public class DownloadEntryServiceTests {
 
         dto = dtos.get(0);
         assertThat(dto.getVideoId()).isEqualTo("e4Uo3nKVx4A");
+    }
+
+    @Test
+    void testFindEntriesByUploaderWorks() {
+        given(downloadEntryRepository.findByUploader(any(), any(Pageable.class))).willAnswer(i -> {
+            String uploader = i.getArgument(0);
+            Pageable p = i.getArgument(1);
+            return extractPageFromList(allDownloadEntries.stream()
+                    .filter(d -> d.getUploader().equals(uploader))
+                    .toList(), p);
+        });
+
+        List<DownloadEntryDTO> dtos = downloadEntryService.findEntriesByUploader("Premier League", new Pair(0, 1), null);
+        assertThat(dtos).isNotEmpty();
+        assertThat(dtos).hasSize(1);
+
+        DownloadEntryDTO dto = dtos.get(0);
+        assertThat(dto.getVideoId()).isEqualTo("6jWNcraW4Go");
+
+        List<DownloadEntryDTO> dtos2 = downloadEntryService.findEntriesByUploader("Premier League", new Pair(0, 2), null);
+        assertThat(dtos2).isNotEmpty();
+        assertThat(dtos2).hasSize(2);
+
+        DownloadEntryDTO dto2 = dtos2.get(1);
+        assertThat(dto2.getVideoId()).isEqualTo("RbXobmVdc20");
     }
 }

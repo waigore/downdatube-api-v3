@@ -19,11 +19,6 @@ public class DownloadController {
             @RequestParam(required = false) String filter,
             @RequestParam(required = false) Pair<Integer, Integer> range,
             @RequestParam(required = false) Pair<String, String> sort) {
-        if (range == null) {
-            return downloadEntryService.findAllEntries(sort);
-        }
-        else {
-            return downloadEntryService.findEntries(range, sort);
-        }
+        return downloadEntryService.findEntries(range, sort);
     }
 }
